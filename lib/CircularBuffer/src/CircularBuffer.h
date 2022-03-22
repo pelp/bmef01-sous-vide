@@ -1,3 +1,9 @@
+// ========= CircularBuffer.h ===========
+// AUTHOR       :           Felix Malmsjö
+// CREATE DATE  :              2022-03-22
+// PURPOSE      :  Circular buffer header
+// COURSE       :                  BMEF01
+// ======================================
 class CircularBuffer
 {
     private:
