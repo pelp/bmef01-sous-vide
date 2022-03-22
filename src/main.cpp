@@ -28,12 +28,14 @@
 
 #define VAL_TO_TEMP(x) (m * log(x + l) + b)
 */
-#define a 4.4037e-9
-#define b -2.3798e-5
-#define c 6.6659e-2
-#define d -2.0150e1
+// These constants are for a R2 value of 1.5kOhm,
+// this will give the most accurate results in the 50-90 degree range.
+#define a 5.0523e-9
+#define b -2.7905e-5
+#define c 7.7676e-2
+#define d -1.0894e1
 
-#define VAL_TO_TEMP(x) (x * (c + x * (b + x * a)) + d)
+#define VAL_TO_TEMP(x) a*x*x*x + b*x*x + c*x + d
 #define GET_TEMP(pin) (VAL_TO_TEMP((double)analogRead(pin)))
 
 double Setpoint, Input, Output;
