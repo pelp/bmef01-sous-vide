@@ -19,11 +19,21 @@
 #define TEMPERATURE_DATA_LEN 100
 #define SAMPLE_TIME 100
 
+// OLD LOG APPROX
+// Not as good as the new cubic approx
+/*
 #define m 99.1104
 #define l 833.729
 #define b -673.374
 
 #define VAL_TO_TEMP(x) (m * log(x + l) + b)
+*/
+#define a 4.4037e-9
+#define b -2.3798e-5
+#define c 6.6659e-2
+#define d -2.0150e1
+
+#define VAL_TO_TEMP(x) (x * (c + x * (b + x * a)) + d)
 #define GET_TEMP(pin) (VAL_TO_TEMP((double)analogRead(pin)))
 
 double Setpoint, Input, Output;
