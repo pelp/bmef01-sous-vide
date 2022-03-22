@@ -1,0 +1,152 @@
+:root {
+    box-sizing: border-box;
+    --text-shadow-color: #889;
+    --text-color: #ccd;
+    --background-color: #222228;
+    --button-color: #05e;
+    --button-color-hover: #16f;
+    --button-color-active: #27f;
+    --hr-color: #445;
+    --border-color: #889;
+}
+
+body {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    background: var(--background-color);
+    margin: 0;
+}
+
+h1 {
+    font-family: sans-serif;
+    text-shadow: var(--text-shadow-color) 0 0 10px;
+    font-weight: 100;
+    color: var(--text-color);
+}
+
+svg polyline {
+    stroke: var(--button-color);
+}
+
+svg {
+    border-bottom: 1px solid var(--border-color);
+    border-left: 1px solid var(--border-color);
+    padding: 10px;
+    margin: 10px;
+}
+
+svg line {
+    stroke: var(--border-color);
+    stroke-width: 0.5px;
+}
+
+svg text {
+    text-anchor: middle;
+    fill: var(--text-color);
+    font-size: 7pt;
+}
+
+button {
+    background-color: var(--button-color);
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16pt;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.1s ease-in-out;
+}
+
+hr {
+    border: 1px solid var(--hr-color);
+    border-radius: 50px;
+}
+
+button:hover {
+    background-color: var(--button-color-hover);
+}
+
+button:active {
+    background-color: var(--button-color-active);
+}
+
+.input-container {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    align-items: center;
+    justify-items: center;
+}
+
+.number-input {
+    font-size: 18pt;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    height: 100px;
+    width: max-content;
+    display: grid;
+    margin: 0;
+    grid-template-areas: "a b"
+                         "a c";
+    grid-template-columns: 2fr 1fr;
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1),
+                      0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+.number-input .dec,
+.number-input .inc {
+    color: var(--text-color);
+    text-align: center;
+    line-height: 50px;
+    font-size: 24pt;
+    box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.1),
+                      0 0 5px rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    user-select: none;
+}
+
+.number-input .inc {
+    grid-area: b;
+    border-bottom: 0.5px solid var(--border-color);
+}
+
+.number-input .dec {
+    grid-area: c;
+    border-top: 0.5px solid var(--border-color);
+}
+
+.number-input .display {
+    grid-area: a;
+    background-color: transparent;
+    border: none;
+    border-right: 1px solid var(--border-color);
+    color: var(--text-color);
+    font-size: 72pt;
+    height: 100px;
+    padding: 0;
+    line-height: 100px;
+    width: 104pt;
+    text-align: center;
+    width: 1fr;
+    box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.1),
+                      0 0 5px rgba(255, 255, 255, 0.1);
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+.app-container {
+    width: calc(100% - 100px);
+    max-width: 1000px;
+}
