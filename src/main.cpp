@@ -11,6 +11,7 @@
 #include <AsyncTCP.h>
 #include "ESPAsyncWebServer.h"
 #include "SPIFFS.h"
+#include "CircularBuffer.h"
 
 // Relay control pins
 #define RELAY1_PIN 7
@@ -50,55 +51,6 @@
 double Setpoint, Input, Output;
 double Kp = 2, Ki = 5, Kd = 0;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
-
-
-// Implement a circular buffer for the temperature sampling.
-// By using a circular buffer we can be sampling data indefinently without
-// having to worry about buffer length.
-class CircularBuffer
-{
-    private:
-    double *data;
-    int ptr;
-
-    public:
-    int len;
-
-    CircularBuffer(int size)
-    {
-        len = size;
-        ptr = 0;
-        data = new double[len];
-        data = {0};
-    }
-
-    void put(double value)
-    {
-        if (data == nullptr)
-        {
-            data = new double[len];
-            ptr = 0;
-        }
-        data[ptr] = value;
-        ptr = (ptr+1) % len;
-    }
-
-    void getBuf(double *tmp)
-    {
-        for (int i = 0; i < len; i++)
-        {
-            tmp[i] = data[(i + ptr) % len];
-        }
-    }
-    
-    ~CircularBuffer()
-    {
-        if(data != nullptr){
-            delete data;
-        }
-    }
-};
-
 
 // Timer variables
 unsigned long long sampleTimer;
@@ -176,7 +128,7 @@ void setup()
               });
     server.on("/api/v1/set_temp",
               HTTP_POST,
-              [](AsyncWebServerRequest *request){},
+              NULL,
               NULL,
               [](AsyncWebServerRequest *request, unsigned char* data,
                  unsigned int len, unsigned int index, unsigned int total) {
@@ -199,6 +151,7 @@ void setup()
 void loop()
 {
     Input = GET_TEMP(TEMP1_PIN);
+    // TODO: Set static compute interval
     myPID.Compute();
 
     // Only save data every SAMPLE_TIME milliseconds
