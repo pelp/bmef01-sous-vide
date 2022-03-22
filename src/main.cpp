@@ -1,3 +1,9 @@
+// ============= main.cpp ===============
+// AUTHOR       :           Felix Malmsjö
+// CREATE DATE  :              2022-03-21
+// PURPOSE      :    Sous Vide controller
+// COURSE       :                  BMEF01
+// ======================================
 #include <Arduino.h>
 #include <PID_v1.h>
 #include <DNSServer.h>
@@ -6,18 +12,20 @@
 #include "ESPAsyncWebServer.h"
 #include "SPIFFS.h"
 
-// https://randomnerdtutorials.com/esp32-web-server-spiffs-spi-flash-file-system/
-
+// Relay control pins
 #define RELAY1_PIN 7
 #define RELAY2_PIN 6
 #define RELAY3_PIN 5
 #define RELAY4_PIN 4
 
+// Temperature ADC pins
 #define TEMP1_PIN 34
 #define TEMP2_PIN 35
 
+// General constants
 #define TEMPERATURE_DATA_LEN 100
 #define SAMPLE_TIME 100
+#define DEFAULT_TEMPERATURE 70
 
 // OLD LOG APPROX
 // Not as good as the new cubic approx
@@ -28,11 +36,14 @@
 
 #define VAL_TO_TEMP(x) (m * log(x + l) + b)
 */
+
+// Constants for the cubic approximation model
 #define a 4.4037e-9
 #define b -2.3798e-5
 #define c 6.6659e-2
 #define d -2.0150e1
 
+// Converts analogRead values to a temperature
 #define VAL_TO_TEMP(x) (x * (c + x * (b + x * a)) + d)
 #define GET_TEMP(pin) (VAL_TO_TEMP((double)analogRead(pin)))
 
@@ -40,14 +51,19 @@ double Setpoint, Input, Output;
 double Kp = 2, Ki = 5, Kd = 0;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
+
+// Implement a circular buffer for the temperature sampling.
+// By using a circular buffer we can be sampling data indefinently without
+// having to worry about buffer length.
 class CircularBuffer
 {
-private:
+    private:
     double *data;
     int ptr;
 
-public:
+    public:
     int len;
+
     CircularBuffer(int size)
     {
         len = size;
@@ -55,6 +71,7 @@ public:
         data = new double[len];
         data = {0};
     }
+
     void put(double value)
     {
         if (data == nullptr)
@@ -82,44 +99,58 @@ public:
     }
 };
 
-// Timers
+
+// Timer variables
 unsigned long long sampleTimer;
 
-CircularBuffer temperatureBuf = 0;
+// Initialise circular buffer
+CircularBuffer temperatureBuf = CircularBuffer(TEMPERATURE_DATA_LEN);
 
 DNSServer dnsServer;
 AsyncWebServer server(80);
 
 void setup()
 {
-    // put your setup code here, to run once:
+    // Setup serial interface for logging and debugging
     Serial.begin(115200);
-    Serial.print("Starting filesystem");
+
+    // Initialise the filesystem where all the web files are
+    Serial.print("Starting filesystem... ");
     if (!SPIFFS.begin(true))
     {
         Serial.println("An Error has occurred while mounting SPIFFS");
         return;
     }
-    Serial.println("... OK");
+    Serial.println("OK");
 
-    Serial.print("Starting circular buffer");
-    temperatureBuf = CircularBuffer(TEMPERATURE_DATA_LEN);
-    Serial.println("... OK");
-
-    Serial.print("Starting PID");
-    pinMode(RELAY1_PIN, OUTPUT);
+    // Setup PID controller
+    Serial.print("Starting PID... ");
+    pinMode(TEMP1_PIN, INPUT);
+    pinMode(TEMP2_PIN, INPUT);
     Input = GET_TEMP(TEMP1_PIN);
-    Setpoint = 100;
+    Setpoint = DEFAULT_TEMPERATURE;
     myPID.SetMode(AUTOMATIC);
     Serial.println("... OK");
 
-    Serial.print("Starting AP");
+    // Setup relays
+    Serial.print("Preparing relays... ");
+    pinMode(RELAY1_PIN, OUTPUT);
+    pinMode(RELAY2_PIN, OUTPUT);
+    pinMode(RELAY3_PIN, OUTPUT);
+    pinMode(RELAY4_PIN, OUTPUT);
+    Serial.println("OK");
+
+    // Starting WiFi access point
+    Serial.print("Starting AP... ");
     WiFi.softAP("esp-captive");
-    Serial.println("... OK");
-    Serial.print("Starting DNS");
+    Serial.println("OK");
+
+    // Starting DNS server
+    Serial.print("Starting DNS... ");
     dnsServer.start(53, "*", WiFi.softAPIP());
-    Serial.println("... OK");
-    // more handlers...
+    Serial.println("OK");
+    
+    // Setting up API endpoints
     Serial.print("Setting up HTTP handlers");
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/index.html", "text/html"); });
