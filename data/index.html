@@ -14,15 +14,32 @@
         <hr>
         <svg id="temp-graph" viewBox="0 0 500 200"></svg>
         <div class="input-container">
-            <div id="temp-range" class="number-input" onmousewheel="if (event.deltaY != 0) {
-                if (event.deltaY < 0) this.children[0].stepUp();
-                if (event.deltaY > 0) this.children[0].stepDown();
-            }">
-                <input type="number" min="30" max="95" step="1" value="60" class="display">
-                <div class="inc" onclick="this.parentElement.children[0].stepUp()">▲</div>
-                <div class="dec" onclick="this.parentElement.children[0].stepDown()">▼</div>
+            <div class="temp-input-container">
+                <div id="temp-range" class="number-input">
+                    <input type="number" min="30" max="95" step="1" value="60"
+                           class="display">
+                    <div class="inc">▲</div>
+                    <div class="dec">▼</div>
+                </div>
+                <button id="temp-btn">Set temperature</button>
             </div>
-            <button id="temp-btn">Set temperature</button>
+            <div class="time-input-container">
+                <div class="timer-input">
+                    <div id="hours-range" class="number-input padded">
+                        <input type="number" min="0" max="99" step="1" value="00"
+                               class="display">
+                        <div class="inc">▲</div>
+                        <div class="dec">▼</div>
+                    </div>
+                    <div id="minutes-range" class="number-input padded">
+                        <input type="number" min="0" max="59" step="1" value="00"
+                               class="display">
+                        <div class="inc">▲</div>
+                        <div class="dec">▼</div>
+                    </div>
+                </div>
+                <button id="time-btn">Set time</button>
+            </div>
         </div>
     </div>
 </body>
