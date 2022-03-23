@@ -24,9 +24,10 @@
 #define TEMP2_PIN 35
 
 // General constants
-#define TEMPERATURE_DATA_LEN 100
-#define SAMPLE_TIME 100
-#define DEFAULT_TEMPERATURE 70
+#define TEMPERATURE_DATA_LEN    100
+#define SAMPLE_TIME             100
+#define PID_TIME                5
+#define DEFAULT_TEMPERATURE     70
 
 // OLD LOG APPROX
 // Not as good as the new cubic approx
@@ -52,13 +53,22 @@ double Kp = 2, Ki = 5, Kd = 0;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 // Timer variables
-unsigned long long sampleTimer;
+unsigned long sampleTimer = 0;
+unsigned long pidTimer = 0;
+unsigned long turnOffTimer = 0;
+unsigned long turnOffTime = 0;
+
+// State variables
+bool running = false;
 
 // Initialise circular buffer
 CircularBuffer temperatureBuf = CircularBuffer(TEMPERATURE_DATA_LEN);
 
 DNSServer dnsServer;
 AsyncWebServer server(80);
+
+// Function declarations
+void allRelaysOff();
 
 void setup()
 {
@@ -89,6 +99,7 @@ void setup()
     pinMode(RELAY2_PIN, OUTPUT);
     pinMode(RELAY3_PIN, OUTPUT);
     pinMode(RELAY4_PIN, OUTPUT);
+    allRelaysOff();
     Serial.println("OK");
 
     // Starting WiFi access point
@@ -125,12 +136,62 @@ void setup()
               {
                 request->send(200, "text/plain", String(SAMPLE_TIME));
               });
+    server.on("/api/v1/get_time",
+              HTTP_GET,
+              [](AsyncWebServerRequest *request)
+              {
+                request->send(200, "text/plain", String(turnOffTime));
+              });
+    server.on("/api/v1/get_elapsed_time",
+              HTTP_GET,
+              [](AsyncWebServerRequest *request)
+              {
+                request->send(200, "text/plain",
+                              String(millis() - turnOffTimer));
+              });
+    server.on("/api/v1/get_temp",
+              HTTP_GET,
+              [](AsyncWebServerRequest *request)
+              {
+                request->send(200, "text/plain", String(Setpoint));
+              });
+    server.on("/api/v1/start",
+              HTTP_GET,
+              [](AsyncWebServerRequest *request)
+              {
+                if (running)
+                {
+                    request->send(200, "text/plain", "ERROR RUNNING");
+                    return;
+                }
+                turnOffTimer = millis();
+                running = true;
+                request->send(200, "text/plain", "OK");
+              });
+    server.on("/api/v1/stop",
+              HTTP_GET,
+              [](AsyncWebServerRequest *request)
+              {
+                if (!running)
+                {
+                    request->send(200, "text/plain", "ERROR STOPPED");
+                    return;
+                }
+                allRelaysOff();
+                running = false;
+                request->send(200, "text/plain", "OK");
+              });
     server.on("/api/v1/set_temp",
               HTTP_POST,
               NULL,
               NULL,
               [](AsyncWebServerRequest *request, unsigned char* data,
                  unsigned int len, unsigned int index, unsigned int total) {
+                if (running)
+                {
+                    request->send(200, "text/plain", "ERROR RUNNING");
+                    return;
+                }
                 char body[len+1];
                 for (int i = 0; i < len; i++)
                 {
@@ -139,6 +200,26 @@ void setup()
                 body[len] = 0;
                 Setpoint = String(body).toDouble();
                 request->send(200, "text/plain", String(Setpoint));
+              });
+    server.on("/api/v1/set_time",
+              HTTP_POST,
+              NULL,
+              NULL,
+              [](AsyncWebServerRequest *request, unsigned char* data,
+                 unsigned int len, unsigned int index, unsigned int total) {
+                if (running)
+                {
+                    request->send(200, "text/plain", "ERROR RUNNING");
+                    return;
+                }
+                char body[len+1];
+                for (int i = 0; i < len; i++)
+                {
+                    body[i] = data[index+i];
+                }
+                body[len] = 0;
+                turnOffTime = String(body).toDouble();
+                request->send(200, "text/plain", String(turnOffTime));
               });
     Serial.println("... OK");
 
@@ -150,8 +231,22 @@ void setup()
 void loop()
 {
     Input = GET_TEMP(TEMP1_PIN);
-    // TODO: Set static compute interval
-    myPID.Compute();
+
+    // Only compute PID and turn on relay if running
+    if (running) {
+        if (millis() - pidTimer > PID_TIME)
+        {
+            myPID.Compute();
+            if (Output > 128)
+            {
+                digitalWrite(RELAY1_PIN, HIGH);
+            }
+            else
+            {
+                digitalWrite(RELAY1_PIN, LOW);
+            }
+        }
+    }
 
     // Only save data every SAMPLE_TIME milliseconds
     if (millis() - sampleTimer > SAMPLE_TIME)
@@ -161,13 +256,13 @@ void loop()
     }
     // Default PID output 0-255 (default Arduino PWM range). Only turn on relay
     // if the output is above half
-    if (Output > 128)
-    {
-        digitalWrite(RELAY1_PIN, HIGH);
-    }
-    else
-    {
-        digitalWrite(RELAY1_PIN, LOW);
-    }
     dnsServer.processNextRequest();
+}
+
+void allRelaysOff()
+{
+    digitalWrite(RELAY1_PIN, LOW);
+    digitalWrite(RELAY2_PIN, LOW);
+    digitalWrite(RELAY3_PIN, LOW);
+    digitalWrite(RELAY4_PIN, LOW);
 }
