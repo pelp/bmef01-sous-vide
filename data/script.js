@@ -1,8 +1,10 @@
 window.onload = () => {
     const graph = document.getElementById('temp-graph');
 
+    // Make the graph update periodically
     const interval = setInterval(() => updateGraph(graph), 1000);
 
+    // Send POST request to the server with the temperature double as payload
     const setTempButton = document.getElementById('temp-btn');
     setTempButton.addEventListener('click', event => {
         const temp = document.getElementById('temp-range').value;
@@ -14,6 +16,7 @@ window.onload = () => {
         });
     });
 
+    // Send POST request to the server with timer information as milliseconds
     const setTimeButton = document.getElementById('time-btn');
     setTimeButton.addEventListener('click', event => {
         // Convert time to millis
@@ -30,6 +33,8 @@ window.onload = () => {
         });
     });
 
+    // Functionality for the number inputs, with zero padding and to be able to
+    // change the input with scroll, click and change updates.
     const numberInputs = Array.from(
         document.getElementsByClassName('number-input'));
     numberInputs.forEach(element => {
@@ -58,10 +63,15 @@ window.onload = () => {
             stepUp();
         });
 
+        // Adds padding to some number inputs
         if (Array.from(element.classList).includes('padded')) {
             display.addEventListener('input', event => {
-                if (display.value < 10) display.value = '0' + display.value;
-                if (display.value.length > 2) display.value = display.value.substring(1, 3);
+                if (display.value.length > 2) 
+                    display.value = display.value.substring(1, 3);
+                else if (display.value.length == 0)
+                    display.value = '00';
+                else if (display.value  < 10) 
+                    display.value = '0' + display.value;
             })
         }
 
@@ -75,10 +85,13 @@ window.onload = () => {
         });
     });
 
+    // Get the current set temperature and update the temp input to reflect
     const tempRange = document.getElementById('temp-range');
     fetch("/api/v1/get_temp").then(response => response.text()).then(text => {
         tempRange.value = text;
     });
+
+    // Gets data from the API and draws the graph
     const updateGraph = () => {
         const maxTemp = 120;
         const tempResolution = 10;
