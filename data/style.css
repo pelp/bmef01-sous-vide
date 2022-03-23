@@ -47,6 +47,7 @@ svg line {
 }
 
 svg text {
+    font-family: sans-serif;
     fill: var(--text-color);
     font-size: 7pt;
     filter: drop-shadow(0 0 2px var(--text-shadow-color));
