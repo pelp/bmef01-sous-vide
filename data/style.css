@@ -95,6 +95,11 @@ button[state=stopped]:hover {
     background-color: var(--button-stopped-hover-color);
 }
 
+.start-btn {
+    grid-area: c;
+    width: 20%;
+}
+
 hr {
     border: 1px solid var(--hr-color);
     border-radius: 50px;
@@ -111,8 +116,18 @@ button:active {
 .input-container {
     display: grid;
     grid-template-columns: 2fr 3fr;
+    grid-template-areas: "a b"
+                         "c c";
     align-items: center;
     justify-items: center;
+}
+
+.time-input-container {
+    grid-area: b;
+}
+
+.temp-input-container {
+    grid-area: a;
 }
 
 .temp-input-container,
