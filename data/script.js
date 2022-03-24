@@ -103,7 +103,8 @@ window.onload = async () => {
         if (state === 'RUNNING') {
             const response = await getData('stop');
             if (response === 'OK') {
-                startBtn.innerHTML = 'Stop';
+                startBtn.innerHTML = 'Start';
+                startBtn.setAttribute('state', 'stopped');
             }
             else {
                 console.log("Error: ", response);
@@ -111,9 +112,10 @@ window.onload = async () => {
         }
         else
         {
-            startBtn.setAttribute('state', 'stopped');
+            const response = await getData('start');
             if (response === 'OK') {
-                startBtn.innerHTML = 'Start';
+                startBtn.innerHTML = 'Stop';
+                startBtn.setAttribute('state', 'running');
             }
             else {
                 console.log("Error: ", response);
@@ -177,6 +179,15 @@ window.onload = async () => {
     }
     await updateGraph();
 
+    const updateTimer = () => {
+        // TODO: Show the timer and how long it's left
+    };
+
     // Make the graph update periodically
-    const interval = setInterval(() => updateGraph(graph), 1000);
+    const interval = setInterval(() => {
+        if (running) {
+            updateTimer();
+        }
+        updateGraph();
+    }, 1000);
 }
