@@ -97,7 +97,7 @@ button[state=stopped]:hover {
 
 .start-btn {
     grid-area: c;
-    width: 20%;
+    min-width: 200px;
 }
 
 hr {
@@ -115,7 +115,7 @@ button:active {
 
 .input-container {
     display: grid;
-    grid-template-columns: 2fr 3fr;
+    grid-template-columns: 1fr 1fr;
     grid-template-areas: "a b"
                          "c c";
     align-items: center;
@@ -218,5 +218,6 @@ input[type=number] {
     }
     button {
         font-size: clamp(8pt, max(2vh, 2vw), 24pt);
+        margin: 15px;
     }
   }
