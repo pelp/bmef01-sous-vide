@@ -14,7 +14,10 @@ CircularBuffer::CircularBuffer(int size)
     len = size;
     ptr = 0;
     data = new double[len];
-    data = {0};
+    for (int i = 0; i < len; i++)
+    {
+        data[i] = 0;
+    }
 }
 
 void CircularBuffer::put(double value)
@@ -22,6 +25,10 @@ void CircularBuffer::put(double value)
     if (data == nullptr)
     {
         data = new double[len];
+        for (int i = 0; i < len; i++)
+        {
+            data[i] = 0;
+        }
         ptr = 0;
     }
     data[ptr] = value;

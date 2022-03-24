@@ -87,6 +87,40 @@ window.onload = async () => {
         });
     });
 
+    const startBtn = document.getElementById('start-btn');
+    const state = await getData('get_state');
+    if (state === 'RUNNING') {
+        startBtn.innerHTML = 'Stop';
+        startBtn.setAttribute('state', 'running');
+    }
+    else
+    {
+        startBtn.innerHTML = 'Start';
+        startBtn.setAttribute('state', 'stopped');
+    }
+    startBtn.addEventListener('click', async event => {
+        const state = await getData('get_state');
+        if (state === 'RUNNING') {
+            const response = await getData('stop');
+            if (response === 'OK') {
+                startBtn.innerHTML = 'Stop';
+            }
+            else {
+                console.log("Error: ", response);
+            }
+        }
+        else
+        {
+            startBtn.setAttribute('state', 'stopped');
+            if (response === 'OK') {
+                startBtn.innerHTML = 'Start';
+            }
+            else {
+                console.log("Error: ", response);
+            }
+        }
+    });
+
     // Get the current set temperature and update the temp input to reflect
     const tempRange = document.getElementById('temp-range')
         .getElementsByClassName('display')[0];

@@ -14,10 +14,10 @@
 #include "CircularBuffer.h"
 
 // Relay control pins
-#define RELAY1_PIN 7
-#define RELAY2_PIN 6
-#define RELAY3_PIN 5
-#define RELAY4_PIN 4
+#define RELAY1_PIN 14
+#define RELAY2_PIN 27
+#define RELAY3_PIN 16
+#define RELAY4_PIN 17
 
 // Temperature ADC pins
 #define TEMP1_PIN 34
@@ -25,7 +25,6 @@
 
 // General constants
 #define TEMPERATURE_DATA_LEN    100
-#define SAMPLE_TIME             100
 #define PID_TIME                5
 #define DEFAULT_TEMPERATURE     70
 
@@ -60,6 +59,7 @@ unsigned long turnOffTime = 0;
 
 // State variables
 bool running = false;
+unsigned int sampleTimestep = 1000;
 
 // Initialise circular buffer
 CircularBuffer temperatureBuf = CircularBuffer(TEMPERATURE_DATA_LEN);
@@ -99,6 +99,9 @@ void setup()
     pinMode(RELAY2_PIN, OUTPUT);
     pinMode(RELAY3_PIN, OUTPUT);
     pinMode(RELAY4_PIN, OUTPUT);
+    Serial.println("OK");
+
+    Serial.print("Turning off all relays... ");
     allRelaysOff();
     Serial.println("OK");
 
@@ -116,7 +119,7 @@ void setup()
     Serial.print("Setting up HTTP handlers");
 
     // Make sure we can access regular files from the server
-    server.serveStatic("/", SPIFFS, "/");
+    server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
 
     server.on("/api/v1/get_data", HTTP_GET, [](AsyncWebServerRequest *request)
               {
@@ -134,7 +137,13 @@ void setup()
               HTTP_GET,
               [](AsyncWebServerRequest *request)
               {
-                request->send(200, "text/plain", String(SAMPLE_TIME));
+                request->send(200, "text/plain", String(sampleTimestep));
+              });
+    server.on("/api/v1/get_state",
+              HTTP_GET,
+              [](AsyncWebServerRequest *request)
+              {
+                request->send(200, "text/plain", running ? "RUNNING" : "STOPPED");
               });
     server.on("/api/v1/get_time",
               HTTP_GET,
@@ -201,6 +210,26 @@ void setup()
                 Setpoint = String(body).toDouble();
                 request->send(200, "text/plain", String(Setpoint));
               });
+    server.on("/api/v1/set_timestep",
+              HTTP_POST,
+              NULL,
+              NULL,
+              [](AsyncWebServerRequest *request, unsigned char* data,
+                 unsigned int len, unsigned int index, unsigned int total) {
+                if (running)
+                {
+                    request->send(200, "text/plain", "ERROR RUNNING");
+                    return;
+                }
+                char body[len+1];
+                for (int i = 0; i < len; i++)
+                {
+                    body[i] = data[index+i];
+                }
+                body[len] = 0;
+                sampleTimestep = String(body).toDouble();
+                request->send(200, "text/plain", String(sampleTimestep));
+              });
     server.on("/api/v1/set_time",
               HTTP_POST,
               NULL,
@@ -248,8 +277,8 @@ void loop()
         }
     }
 
-    // Only save data every SAMPLE_TIME milliseconds
-    if (millis() - sampleTimer > SAMPLE_TIME)
+    // Only save data every sampleTimestep milliseconds
+    if (millis() - sampleTimer > sampleTimestep)
     {
         sampleTimer = millis();
         temperatureBuf.put(Input);

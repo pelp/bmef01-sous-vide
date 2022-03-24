@@ -11,6 +11,10 @@
     --button-color-active: #27f;
     --hr-color: #445;
     --border-color: #889;
+    --button-running-color: #1f4;
+    --button-stopped-color: #F14;
+    --button-stopped-hover-color: #F64;
+    --button-running-hover-color: #2F5;
 }
 
 body {
@@ -73,6 +77,22 @@ button {
     cursor: pointer;
     border-radius: 5px;
     transition: background-color 0.1s ease-in-out;
+}
+
+button[state=running] {
+    background-color: var(--button-running-color);
+}
+
+button[state=running]:hover {
+    background-color: var(--button-running-hover-color);
+}
+
+button[state=stopped] {
+    background-color: var(--button-stopped-color);
+}
+
+button[state=stopped]:hover {
+    background-color: var(--button-stopped-hover-color);
 }
 
 hr {
