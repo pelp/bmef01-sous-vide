@@ -1,5 +1,5 @@
 Kp = 10
-Ki = 10
+Ki = 0.1
 
 P = 300 % Power output of the heating element
 
