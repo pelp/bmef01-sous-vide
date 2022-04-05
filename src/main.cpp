@@ -111,7 +111,7 @@ void setup()
 
     // Starting WiFi access point
     Serial.print("Starting AP... ");
-    WiFi.softAP("esp-captive");
+    WiFi.softAP("Sous vide");
     Serial.println("OK");
 
     // Starting DNS server
