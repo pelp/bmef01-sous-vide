@@ -25,7 +25,7 @@
 
 // General constants
 #define TEMPERATURE_DATA_LEN    100
-#define PID_TIME                5
+#define PID_TIME                1000
 #define DEFAULT_TEMPERATURE     70
 
 // OLD LOG APPROX
@@ -48,7 +48,7 @@
 #define GET_TEMP(pin) (VAL_TO_TEMP((double)analogRead(pin)))
 
 double Setpoint, Input, Output;
-double Kp = 2, Ki = 5, Kd = 0;
+double Kp = 10, Ki = 1, Kd = 0;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 // Timer variables
@@ -69,6 +69,8 @@ AsyncWebServer server(80);
 
 // Function declarations
 void allRelaysOff();
+void turnHeaterOn();
+void turnHeaterOff();
 
 void setup()
 {
@@ -91,6 +93,7 @@ void setup()
     Input = GET_TEMP(TEMP1_PIN);
     Setpoint = DEFAULT_TEMPERATURE;
     myPID.SetMode(AUTOMATIC);
+    myPID.SetOutputLimits(0, 1);
     Serial.println("... OK");
 
     // Setup relays
@@ -119,7 +122,7 @@ void setup()
     Serial.print("Setting up HTTP handlers");
 
     // Make sure we can access regular files from the server
-    server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
+    // server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
 
     server.on("/api/v1/get_data", HTTP_GET, [](AsyncWebServerRequest *request)
               {
@@ -168,36 +171,44 @@ void setup()
               HTTP_GET,
               [](AsyncWebServerRequest *request)
               {
+                Serial.print("Starting sous vide... ");
                 if (running)
                 {
+                    Serial.println("ERROR");
                     request->send(200, "text/plain", "ERROR RUNNING");
                     return;
                 }
                 turnOffTimer = millis();
                 running = true;
+                Serial.println("OK");
                 request->send(200, "text/plain", "OK");
               });
     server.on("/api/v1/stop",
               HTTP_GET,
               [](AsyncWebServerRequest *request)
               {
+                Serial.print("Starting sous vide... ");
                 if (!running)
                 {
+                    Serial.println("ERROR");
                     request->send(200, "text/plain", "ERROR STOPPED");
                     return;
                 }
                 allRelaysOff();
                 running = false;
+                Serial.println("OK");
                 request->send(200, "text/plain", "OK");
               });
     server.on("/api/v1/set_temp",
               HTTP_POST,
-              NULL,
+              [](AsyncWebServerRequest *request){},
               NULL,
               [](AsyncWebServerRequest *request, unsigned char* data,
                  unsigned int len, unsigned int index, unsigned int total) {
+                Serial.print("Setting temperature... ");
                 if (running)
                 {
+                    Serial.println("ERROR");
                     request->send(200, "text/plain", "ERROR RUNNING");
                     return;
                 }
@@ -208,16 +219,20 @@ void setup()
                 }
                 body[len] = 0;
                 Setpoint = String(body).toDouble();
+                Serial.print(Setpoint);
+                Serial.println(" OK");
                 request->send(200, "text/plain", String(Setpoint));
               });
     server.on("/api/v1/set_timestep",
               HTTP_POST,
-              NULL,
+              [](AsyncWebServerRequest *request){},
               NULL,
               [](AsyncWebServerRequest *request, unsigned char* data,
                  unsigned int len, unsigned int index, unsigned int total) {
+                Serial.print("Setting timestep... ");
                 if (running)
                 {
+                    Serial.println("ERROR");
                     request->send(200, "text/plain", "ERROR RUNNING");
                     return;
                 }
@@ -228,17 +243,21 @@ void setup()
                 }
                 body[len] = 0;
                 sampleTimestep = String(body).toDouble();
+                Serial.print(sampleTimestep);
+                Serial.println(" OK");
                 request->send(200, "text/plain", String(sampleTimestep));
               });
     server.on("/api/v1/set_time",
               HTTP_POST,
-              NULL,
+              [](AsyncWebServerRequest *request){},
               NULL,
               [](AsyncWebServerRequest *request, unsigned char* data,
                  unsigned int len, unsigned int index, unsigned int total) {
+                Serial.print("Setting time... ");
                 if (running)
                 {
                     request->send(200, "text/plain", "ERROR RUNNING");
+                    Serial.println("ERROR");
                     return;
                 }
                 char body[len+1];
@@ -248,32 +267,131 @@ void setup()
                 }
                 body[len] = 0;
                 turnOffTime = String(body).toDouble();
+                Serial.print(turnOffTime);
+                Serial.println(" OK");
                 request->send(200, "text/plain", String(turnOffTime));
               });
+    server.on("/api/v1/set_kp",
+              HTTP_POST,
+              [](AsyncWebServerRequest *request){},
+              NULL,
+              [](AsyncWebServerRequest *request, unsigned char* data,
+                 unsigned int len, unsigned int index, unsigned int total) {
+                Serial.print("Setting Kp... ");
+                if (running)
+                {
+                    request->send(200, "text/plain", "ERROR RUNNING");
+                    Serial.println("ERROR");
+                    return;
+                }
+                char body[len+1];
+                for (int i = 0; i < len; i++)
+                {
+                    body[i] = data[index+i];
+                }
+                body[len] = 0;
+                Kp = String(body).toDouble();
+                myPID.SetTunings(Kp, Ki, Kd);
+                Serial.print(Kp);
+                Serial.println(" OK");
+                request->send(200, "text/plain", String(Kp));
+              });
+    server.on("/api/v1/set_ki",
+              HTTP_POST,
+              [](AsyncWebServerRequest *request){},
+              NULL,
+              [](AsyncWebServerRequest *request, unsigned char* data,
+                 unsigned int len, unsigned int index, unsigned int total) {
+                Serial.print("Setting Ki... ");
+                if (running)
+                {
+                    request->send(200, "text/plain", "ERROR RUNNING");
+                    Serial.println("ERROR");
+                    return;
+                }
+                char body[len+1];
+                for (int i = 0; i < len; i++)
+                {
+                    body[i] = data[index+i];
+                }
+                body[len] = 0;
+                Ki = String(body).toDouble();
+                myPID.SetTunings(Kp, Ki, Kd);
+                Serial.print(Ki);
+                Serial.println(" OK");
+                request->send(200, "text/plain", String(Ki));
+              });
+    server.on("/api/v1/set_kd",
+              HTTP_POST,
+              [](AsyncWebServerRequest *request){},
+              NULL,
+              [](AsyncWebServerRequest *request, unsigned char* data,
+                 unsigned int len, unsigned int index, unsigned int total) {
+                Serial.print("Setting Kd... ");
+                if (running)
+                {
+                    request->send(200, "text/plain", "ERROR RUNNING");
+                    Serial.println("ERROR");
+                    return;
+                }
+                char body[len+1];
+                for (int i = 0; i < len; i++)
+                {
+                    body[i] = data[index+i];
+                }
+                body[len] = 0;
+                Kd = String(body).toDouble();
+                myPID.SetTunings(Kp, Ki, Kd);
+                Serial.print(Kd);
+                Serial.println(" OK");
+                request->send(200, "text/plain", String(Kd));
+              });
     Serial.println("... OK");
+
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/index.html", "text/html"); });
+    server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/style.css", "text/css"); });
+    server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/script.js", "text/javascript"); });
 
     Serial.print("Starting web server");
     server.begin();
     Serial.println("... OK");
 }
 
+double accTemp = 0;
+int n = 0;
+
 void loop()
 {
-    Input = GET_TEMP(TEMP1_PIN);
-
+    accTemp += (GET_TEMP(TEMP1_PIN) + GET_TEMP(TEMP2_PIN)) / 2.0;
+    n++;
+    Input = accTemp / n;
     // Only compute PID and turn on relay if running
     if (running) {
         if (millis() - pidTimer > PID_TIME)
         {
+            accTemp = 0;
+            n = 0;
+            pidTimer = millis();
             myPID.Compute();
-            if (Output > 128)
+            Serial.print("Current output value: ");
+            Serial.println(Output);
+            if (Output > 0.5)
             {
-                digitalWrite(RELAY1_PIN, HIGH);
+                turnHeaterOn();
             }
             else
             {
-                digitalWrite(RELAY1_PIN, LOW);
+                turnHeaterOff();
             }
+        }
+        if (millis() - turnOffTimer > turnOffTime)
+        {
+            allRelaysOff();
+            Serial.println("Timer done! Turning off all relays!");
+            running = false;
         }
     }
 
@@ -294,4 +412,16 @@ void allRelaysOff()
     digitalWrite(RELAY2_PIN, LOW);
     digitalWrite(RELAY3_PIN, LOW);
     digitalWrite(RELAY4_PIN, LOW);
+}
+
+void turnHeaterOn()
+{
+    digitalWrite(RELAY1_PIN, HIGH);
+    digitalWrite(RELAY2_PIN, HIGH);
+}
+
+void turnHeaterOff()
+{
+    digitalWrite(RELAY1_PIN, LOW);
+    digitalWrite(RELAY2_PIN, LOW);
 }

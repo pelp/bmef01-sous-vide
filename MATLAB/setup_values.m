@@ -1,17 +1,17 @@
 Kp = 10
 Ki = 0.1
 
-P = 300 % Power output of the heating element
+P = 1000 % Power output of the heating element
 
 c = 4180 % Water heatcapacity
-m = 2 % kg of water
+m = 3 % kg of water
 
 A = 0.07 % Approx area of 30cm diameter circle
-a = 50 % Approx Air heat transfer koef (10 - 100)
+a = 100 % Approx Air heat transfer koef (10 - 100)
 
-Ta = 19 % Ambient temperature
+Ta = 21 % Ambient temperature
 
-Ts = 1 % Sample time
-Td = 0.5 % Temperature resolution
+Ts = 10 % Sample time
+Td = 0.1 % Temperature resolution
 
 Sp = 82 % Temperature setpoint

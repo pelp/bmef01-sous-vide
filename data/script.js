@@ -1,4 +1,5 @@
-const API_PATH = "/api/v1"
+const API_PATH = "/api/v1";
+var running = false;
 async function getData(endpoint) {
     const response = await fetch(API_PATH.trim('/') + '/' + endpoint);
     return await response.text();
@@ -19,7 +20,7 @@ window.onload = async () => {
     // Send POST request to the server with the temperature double as payload
     const setTempButton = document.getElementById('temp-btn');
     setTempButton.addEventListener('click', async event => {
-        const temp = document.getElementById('temp-range').value;
+        const temp = document.getElementById('temp-range').getElementsByClassName('display')[0].value;
         await setData('set_temp', temp);
     });
 
@@ -34,6 +35,23 @@ window.onload = async () => {
         const millis = (hours.value * 60 + minutes.value) * 60000;
         await setData('set_time', millis);
     });
+
+    const fixPadding = display => {
+        if (display.value.length > 2) 
+            display.value = display.value.substring(1, 3);
+        else if (display.value === "")
+            display.value = '00';
+        else if (display.value  < 10 && display.value.length < 2) 
+            display.value = '0' + display.value;
+    };
+
+
+    // Get the current set temperature and update the temp input to reflect
+    const tempRange = document.getElementById('temp-range')
+        .getElementsByClassName('display')[0];
+    const gotTemp = await getData('get_temp');
+    tempRange.value = Math.round(gotTemp);
+    fixPadding(tempRange);
 
     // Functionality for the number inputs, with zero padding and to be able to
     // change the input with scroll, click and change updates.
@@ -68,12 +86,7 @@ window.onload = async () => {
         // Adds padding to some number inputs
         if (Array.from(element.classList).includes('padded')) {
             display.addEventListener('input', event => {
-                if (display.value.length > 2) 
-                    display.value = display.value.substring(1, 3);
-                else if (display.value.length == 0)
-                    display.value = '00';
-                else if (display.value  < 10) 
-                    display.value = '0' + display.value;
+                fixPadding(display);
             })
         }
 
@@ -123,12 +136,6 @@ window.onload = async () => {
         }
     });
 
-    // Get the current set temperature and update the temp input to reflect
-    const tempRange = document.getElementById('temp-range')
-        .getElementsByClassName('display')[0];
-    const gotTemp = await getData('get_temp');
-    tempRange.value = gotTemp;
-
     // Gets data from the API and draws the graph
     const updateGraph = async () => {
         const maxTemp = 120;
@@ -140,8 +147,30 @@ window.onload = async () => {
         graphHeight = graph.viewBox.animVal.height - timeTextOffset;
         const timestep = await getData('get_timestep');
         const text_data = await getData('get_data');
+
+        running = (await getData('get_state') === "RUNNING");
+
+        if (running) {
+            // Get the current set temperature and update the temp input to reflect
+            const tempRange = document.getElementById('temp-range')
+                .getElementsByClassName('display')[0];
+            const gotTemp = await getData('get_temp');
+            tempRange.value = Math.round(gotTemp);
+            fixPadding(tempRange);
+            const timerHoursRange = document.getElementById('hours-range')
+                .getElementsByClassName('display')[0];
+            const timerMinutesRange = document.getElementById('minutes-range')
+                .getElementsByClassName('display')[0];
+            const gotElapsedTime = await getData('get_elapsed_time');
+            const gotTime = await getData('get_time');
+            const timeLeft = gotTime - gotElapsedTime;
+            timerHoursRange.setAttribute('value', Math.floor(timeLeft / 3600000));
+            timerMinutesRange.setAttribute('value', Math.ceil(timeLeft / 60000));
+            fixPadding(timerHoursRange);
+            fixPadding(timerMinutesRange);
+        }
         const array = text_data.split(" ");
-        const hlines = maxTemp / tempResolution - 2;
+        const hlines = maxTemp / tempResolution - 1;
         const vlines = Math.min(9, (array.length-2));
         const data = array.map((entry, i) => ({
             x: (graphWidth * i / (array.length-1)) + xOffset,
@@ -155,7 +184,7 @@ window.onload = async () => {
                 x2="${graphWidth + xOffset}"
                 y2="${y}"/>
                 <text class="temp-text" x="0" y="${y}">
-                    ${Math.round((hlines-h) * maxTemp / (hlines+2))}°C
+                    ${Math.round((hlines-h) * maxTemp / (hlines+1))}°C
                 </text>`
             }).join("\n")}
         ${[...Array(vlines).keys()].map(
@@ -185,7 +214,7 @@ window.onload = async () => {
 
     // Make the graph update periodically
     const interval = setInterval(() => {
-        if (running) {
+        if (true) {
             updateTimer();
         }
         updateGraph();
