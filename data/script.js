@@ -143,7 +143,7 @@ window.onload = async () => {
         const xOffset = 27;
         const yOffset = 0;
         const timeTextOffset = 12;
-        graphWidth = graph.viewBox.animVal.width - xOffset;
+        graphWidth = graph.viewBox.animVal.width - xOffset - 30;
         graphHeight = graph.viewBox.animVal.height - timeTextOffset;
         const timestep = await getData('get_timestep');
         const text_data = await getData('get_data');
@@ -174,7 +174,8 @@ window.onload = async () => {
         const vlines = Math.min(9, (array.length-2));
         const data = array.map((entry, i) => ({
             x: (graphWidth * i / (array.length-1)) + xOffset,
-            y: (graphHeight * (1 - entry / maxTemp)) + yOffset
+            y: (graphHeight * (1 - entry / maxTemp)) + yOffset,
+            temp: entry 
         }));
         graph.innerHTML = `
         ${[...Array(hlines).keys()].map(
@@ -203,8 +204,8 @@ window.onload = async () => {
         <polyline
             fill="none"
             stroke-width="1"
-            points="${data.map(element => `${element.x},${element.y}`)
-            .join(",")}"/>`;
+            points="${data.map(element => `${element.x},${element.y}`).join(",")}"/>
+            <text class="temp-text" x="${graphWidth+xOffset+2}" y="${data[data.length-1].y}">- ${data[data.length-1].temp}°C</text>`;
     }
     await updateGraph();
 

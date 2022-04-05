@@ -42,13 +42,14 @@
 #define a 5.0523e-9
 #define b -2.7905e-5
 #define c 7.7676e-2
-#define d -1.0894e1
+//#define d -1.0894e1
+#define d -3.4
 
 #define VAL_TO_TEMP(x) a*x*x*x + b*x*x + c*x + d
 #define GET_TEMP(pin) (VAL_TO_TEMP((double)analogRead(pin)))
 
 double Setpoint, Input, Output;
-double Kp = 10, Ki = 1, Kd = 0;
+double Kp = 1, Ki = 0.2, Kd = 5;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 // Timer variables
@@ -130,7 +131,8 @@ void setup()
                     request->beginResponseStream("text/plain");
                   double temps[temperatureBuf.len];
                   temperatureBuf.getBuf(temps);
-                  for (int i = 0; i < temperatureBuf.len; i++)
+                  response->printf("%.1f", temps[0]);
+                  for (int i = 1; i < temperatureBuf.len; i++)
                   {
                       response->printf(" %.1f", temps[i]);
                   }
@@ -372,6 +374,10 @@ void loop()
     if (running) {
         if (millis() - pidTimer > PID_TIME)
         {
+            Serial.print("dT: ");
+            Serial.println(GET_TEMP(TEMP1_PIN) - GET_TEMP(TEMP2_PIN));
+            Serial.print("RAW READING: ");
+            Serial.println(analogRead(TEMP1_PIN));
             accTemp = 0;
             n = 0;
             pidTimer = millis();
@@ -400,6 +406,8 @@ void loop()
     {
         sampleTimer = millis();
         temperatureBuf.put(Input);
+        accTemp = 0;
+        n = 0;
     }
     // Default PID output 0-255 (default Arduino PWM range). Only turn on relay
     // if the output is above half
