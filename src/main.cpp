@@ -49,7 +49,7 @@
 #define GET_TEMP(pin) (VAL_TO_TEMP((double)analogRead(pin)))
 
 double Setpoint, Input, Output;
-double Kp = 1, Ki = 0.2, Kd = 5;
+double Kp = 1, Ki = 0.2, Kd = 2;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 // Timer variables
@@ -60,7 +60,7 @@ unsigned long turnOffTime = 0;
 
 // State variables
 bool running = false;
-unsigned int sampleTimestep = 1000;
+unsigned int sampleTimestep = 12000;
 
 // Initialise circular buffer
 CircularBuffer temperatureBuf = CircularBuffer(TEMPERATURE_DATA_LEN);
@@ -374,6 +374,7 @@ void loop()
     if (running) {
         if (millis() - pidTimer > PID_TIME)
         {
+            digitalWrite(RELAY3_PIN, HIGH);
             Serial.print("dT: ");
             Serial.println(GET_TEMP(TEMP1_PIN) - GET_TEMP(TEMP2_PIN));
             Serial.print("RAW READING: ");

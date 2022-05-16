@@ -32,7 +32,8 @@ window.onload = async () => {
                       .getElementsByClassName('display')[0];
         const minutes = document.getElementById('minutes-range')
                         .getElementsByClassName('display')[0];
-        const millis = (hours.value * 60 + minutes.value) * 60000;
+        const calcMin = (parseInt(hours.value) * 60 + parseInt(minutes.value)); // ??????
+        const millis =  calcMin * 60000;
         await setData('set_time', millis);
     });
 
@@ -164,8 +165,9 @@ window.onload = async () => {
             const gotElapsedTime = await getData('get_elapsed_time');
             const gotTime = await getData('get_time');
             const timeLeft = gotTime - gotElapsedTime;
-            timerHoursRange.setAttribute('value', Math.floor(timeLeft / 3600000));
-            timerMinutesRange.setAttribute('value', Math.ceil(timeLeft / 60000));
+            const minutes = Math.ceil(timeLeft / 60000);
+            timerMinutesRange.value = minutes % 60;
+            timerHoursRange.value = Math.floor(minutes / 60);
             fixPadding(timerHoursRange);
             fixPadding(timerMinutesRange);
         }
